@@ -161,11 +161,20 @@
     border-color: var(--primary);
     color: #fff;
   }
+  /* 마이크 버튼 - 기본 초록색 */
+  #micBtn {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+  }
+  #micBtn:active { background: #15803d; }
+
+  /* 녹음 중 - 진한 초록 펄스 */
   .icon-btn.recording {
-    background: var(--danger-bg);
-    border-color: var(--danger);
-    color: var(--danger);
-    animation: pulse 1s ease-in-out infinite;
+    background: #15803d;
+    border-color: #15803d;
+    color: #fff;
+    animation: pulse 0.8s ease-in-out infinite;
   }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
@@ -1325,9 +1334,30 @@ function loadSettings() {
   setTimeout(applyAutoPlayUI, 100);
 }
 
+// ── Screen Wake Lock (화면 꺼짐 방지) ──
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return; // 미지원 브라우저 무시
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch(e) {}
+}
+
+async function releaseWakeLock() {
+  if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
+}
+
+// 앱이 포그라운드로 돌아올 때 자동 재취득
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
 // ── 초기화 ──
 loadHist();
 loadSettings();
+requestWakeLock();
 
 // ── 카테고리 메타데이터 ──
 const KO_CAT = {};
