@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="발음연습" />
+<meta name="theme-color" content="#185FA5" />
+<title>영어 발음 연습</title>
+<link rel="manifest" href="manifest.json" />
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline';
+  connect-src 'self' https://api.mymemory.translated.net https://api.dictionaryapi.dev;
+  media-src 'self' https: blob:;
+  img-src 'self' data:;
+  font-src 'self';
+  worker-src 'self';
+" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface2: #f0f4f8;
+    --primary: #185FA5;
+    --primary-light: #E6F1FB;
+    --primary-dark: #0C447C;
+    --text: #1a1a2e;
+    --text2: #5a6478;
+    --text3: #8a95a8;
+    --border: #e2e8f0;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --surface: #1c2030;
+      --surface2: #252a3a;
+      --primary: #378ADD;
+      --primary-light: #0C447C;
+      --primary-dark: #B5D4F4;
+      --text: #e8edf5;
+      --text2: #8a95b0;
+      --text3: #5a6478;
+      --border: #2a3045;
+      --danger: #f87171;
+      --danger-bg: #2d1515;
+      --success: #4ade80;
+      --success-bg: #0f2d1a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Noto Sans KR', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* Header */
+  .header {
+    background: var(--primary);
+    color: #fff;
+    padding: calc(var(--safe-top) + 14px) 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-icon {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header p { font-size: 11px; opacity: 0.75; }
+  .tts-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Scroll area */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 14px calc(var(--safe-bottom) + 20px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+  }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .word-input {
+    flex: 1;
+    height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 17px;
+    padding: 0 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .word-input:focus { border-color: var(--primary); }
+  .word-input::placeholder { color: var(--text3); font-size: 15px; }
+  .icon-btn {
+    width: 48px; height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:active { transform: scale(0.93); }
+  .icon-btn.primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .icon-btn.recording {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    color: var(--danger);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* Mic status */
+  .mic-status {
+    font-size: 13px;
+    color: var(--danger);
+    min-height: 18px;
+    padding-left: 2px;
+    font-weight: 500;
+  }
+
+  /* Sliders */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-label {
+    font-size: 13px;
+    color: var(--text2);
+    min-width: 36px;
+  }
+  .slider-row input[type=range] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .slider-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Result card */
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+  .word-ko { font-size: 14px; color: var(--text2); margin-bottom: 2px; }
+  .word-en {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+    word-break: break-all;
+  }
+  .ipa-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .ipa-text {
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+  .badge-us { background: var(--primary-light); color: var(--primary-dark); }
+  .badge-uk { background: #f0fdf4; color: #166534; }
+  @media (prefers-color-scheme: dark) {
+    .badge-uk { background: #0f2d1a; color: #4ade80; }
+  }
+  .audio-note {
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  /* Play buttons */
+  .play-row {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    flex: 1;
+    height: 50px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-secondary {
+    flex: 0;
+    padding: 0 16px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1.5px solid var(--border);
+  }
+
+  /* Progress */
+  .progress-wrap { margin-top: 12px; }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 5px;
+  }
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.35s ease;
+  }
+
+  /* Repeat counter (big display during playback) */
+  .play-counter {
+    text-align: center;
+    padding: 10px 0 4px;
+    display: none;
+  }
+  .play-counter .count-num {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+  }
+  .play-counter .count-label { font-size: 13px; color: var(--text3); margin-top: 2px; }
+
+  /* TTS Voice selector */
+  .voice-select {
+    width: 100%;
+    height: 44px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px;
+    padding: 0 12px;
+    outline: none;
+    margin-top: 8px;
+  }
+  .voice-note { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.4; }
+
+  /* History */
+  .hist-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hist-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  .hist-chip:active { background: var(--primary-light); border-color: var(--primary); }
+  .hist-chip span { color: var(--text3); margin-left: 4px; }
+
+  /* Error */
+  .err-box {
+    background: var(--danger-bg);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--danger);
+    font-size: 13px;
+    font-weight: 500;
+    display: none;
+  }
+
+  /* Utility */
+  .hidden { display: none !important; }
+  svg.icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -5px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🔊</div>
+  <div>
+    <h1>영어 발음 연습</h1>
+    <p>한글 입력 → 미국식 발음 반복 재생</p>
+  </div>
+  <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+    <button id="installBtn" onclick="installApp()" style="display:none; background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.4); color:#fff; border-radius:20px; padding:4px 11px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">+ 설치</button>
+    <div class="tts-badge" id="ttsBadge">OS TTS</div>
+  </div>
+</div>
+
+<!-- iOS 홈화면 추가 안내 배너 -->
+<div id="iosBanner" style="display:none; background:#0C447C; color:#E6F1FB; font-size:13px; padding:10px 16px; text-align:center; line-height:1.5;">
+  Safari에서 <strong>공유 버튼</strong> → <strong>홈 화면에 추가</strong>를 탭하면 앱으로 설치됩니다 📲
+  <button onclick="$('iosBanner').style.display='none'" style="background:none;border:none;color:#B5D4F4;font-size:16px;cursor:pointer;margin-left:8px;">✕</button>
+</div>
+
+<div class="scroll">
+
+  <!-- 입력 -->
+  <div class="card">
+    <div class="card-label">단어 입력</div>
+    <div class="input-row">
+      <input class="word-input" type="text" id="wordInput" placeholder="한글 단어를 입력하세요" inputmode="text" enterkeyhint="search" />
+      <button class="icon-btn" id="micBtn" onclick="toggleMic()" aria-label="음성 입력">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button class="icon-btn primary" onclick="doSearch()" aria-label="검색">
+        <svg class="icon" stroke="#fff" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+    <div class="mic-status" id="micStatus"></div>
+  </div>
+
+  <!-- 음성 설정 -->
+  <div class="card">
+    <div class="card-label">음성 설정</div>
+    <div class="slider-row">
+      <span class="slider-label">반복</span>
+      <input type="range" min="1" max="20" step="1" value="3" id="sRepeat" oninput="$('rOut').textContent=this.value+'회'" />
+      <span class="slider-val" id="rOut">3회</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">속도</span>
+      <input type="range" min="3" max="18" step="1" value="10" id="sRate" oninput="$('sOut').textContent=(this.value/10).toFixed(1)+'x'" />
+      <span class="slider-val" id="sOut">1.0x</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">간격</span>
+      <input type="range" min="5" max="60" step="5" value="15" id="sDelay" oninput="$('dOut').textContent=(this.value/10).toFixed(1)+'s'" />
+      <span class="slider-val" id="dOut">1.5s</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">음량</span>
+      <input type="range" min="1" max="100" step="1" value="100" id="sVol" oninput="$('vOut').textContent=this.value+'%'" />
+      <span class="slider-val" id="vOut">100%</span>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="card-label" style="margin-bottom:4px;">TTS 음성 선택</div>
+      <select class="voice-select" id="voiceSelect"></select>
+      <p class="voice-note" id="voiceNote">스마트폰 OS에 설치된 영어 음성 목록입니다. 미국식(en-US)을 추천합니다.</p>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="card hidden" id="resultCard">
+    <div class="result-header">
+      <div>
+        <p class="word-ko" id="dKor"></p>
+        <p class="word-en" id="dEng"></p>
+      </div>
+      <div style="text-align:right; padding-top:4px;">
+        <button class="icon-btn" id="origBtn" onclick="playOrig()" title="사전 원본 오디오" style="display:none;" aria-label="원본 발음 재생">
+          <svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ipa-row hidden" id="ipaRow">
+      <span class="ipa-text" id="ipaUS"></span>
+      <span class="badge badge-us">미국식</span>
+      <span class="ipa-text hidden" id="ipaUK"></span>
+      <span class="badge badge-uk hidden" id="badgeUK">영국식</span>
+    </div>
+
+    <p class="audio-note" id="audioNote"></p>
+
+    <div class="play-counter" id="playCounter">
+      <div class="count-num" id="countNum">0</div>
+      <div class="count-label" id="countLabel">번째 재생 중</div>
+    </div>
+
+    <div class="play-row">
+      <button class="btn btn-primary" id="playBtn" onclick="startPlay()">
+        <svg class="icon" stroke="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        발음 시작
+      </button>
+      <button class="btn btn-danger hidden" id="stopBtn" onclick="doStop()">
+        <svg class="icon" stroke="#fff" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+        중지
+      </button>
+    </div>
+
+    <div class="progress-wrap hidden" id="progWrap">
+      <div class="progress-info">
+        <span id="progLabel"></span>
+        <span id="progCount"></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 히스토리 -->
+  <div class="card hidden" id="histCard">
+    <div class="card-label">최근 검색</div>
+    <div class="hist-chips" id="histList"></div>
+  </div>
+
+  <!-- 에러 -->
+  <div class="err-box" id="errBox"></div>
+
+</div><!-- scroll -->
+
+<script>
+// ── 한국어→영어 내장 사전 (250+) ──
+const KO_EN = {
+  '가방':'bag','가족':'family','가게':'store','가격':'price','각재':'timber',
+  '강':'river','강아지':'dog','겨울':'winter','고양이':'cat','고기':'meat',
+  '공':'ball','공기':'air','공부':'study','공장':'factory','공항':'airport',
+  '과일':'fruit','교실':'classroom','구름':'cloud','그림':'picture','금':'gold',
+  '기차':'train','길':'road','나라':'country','나무':'tree','나비':'butterfly',
+  '날씨':'weather','남자':'man','낮':'daytime','노래':'song','눈':'snow',
+  '눈물':'tear','달':'moon','달력':'calendar','닭':'chicken','대학교':'university',
+  '도서관':'library','돈':'money','돼지':'pig','두부':'tofu','딸기':'strawberry',
+  '마을':'village','마음':'heart','말':'horse','맥주':'beer','머리':'head',
+  '모자':'hat','목':'neck','문':'door','물':'water','물고기':'fish',
+  '바나나':'banana','바다':'sea','바람':'wind','박물관':'museum','발':'foot',
+  '밥':'rice','배':'stomach','배추':'cabbage','버스':'bus','별':'star',
+  '병원':'hospital','봄':'spring','불':'fire','비':'rain','비행기':'airplane',
+  '빵':'bread','사과':'apple','사람':'person','사랑':'love','사전':'dictionary',
+  '산':'mountain','새':'bird','색깔':'color','생일':'birthday','서점':'bookstore',
+  '선물':'gift','선생님':'teacher','소':'cow','소금':'salt','손':'hand',
+  '수박':'watermelon','숲':'forest','시장':'market','식당':'restaurant','신발':'shoes',
+  '아이':'child','아침':'morning','약':'medicine','어머니':'mother','언니':'sister',
+  '얼음':'ice','여름':'summer','여자':'woman','연필':'pencil','열매':'fruit',
+  '영어':'English','오렌지':'orange','우산':'umbrella','우유':'milk','음식':'food',
+  '음악':'music','의사':'doctor','이름':'name','일본':'Japan','자동차':'car',
+  '자전거':'bicycle','저녁':'evening','종이':'paper','주스':'juice','지갑':'wallet',
+  '지도':'map','집':'house','창문':'window','책':'book','책상':'desk',
+  '초콜릿':'chocolate','축구':'soccer','친구':'friend','카메라':'camera',
+  '커피':'coffee','컴퓨터':'computer','코끼리':'elephant','토마토':'tomato',
+  '편지':'letter','포도':'grape','하늘':'sky','학교':'school','학생':'student',
+  '한국':'Korea','핸드폰':'smartphone','호랑이':'tiger','호텔':'hotel',
+  // 목재/무역 업무 관련
+  '목재':'lumber','합판':'plywood','수입':'import','유통':'distribution',
+  '창고':'warehouse','계약':'contract','항구':'port','선박':'ship',
+  '화물':'cargo','관세':'tariff','단가':'unit price','재고':'inventory',
+  '납기':'delivery','견적':'quotation','원목':'log','각재':'timber',
+  '도매':'wholesale','소매':'retail','이사':'director','부장':'manager',
+  '대리':'assistant manager','과장':'section chief','차장':'deputy manager',
+  '파티클보드':'particleboard','중밀도섬유판':'MDF','섬유판':'fiberboard',
+  '선적':'shipment','통관':'customs clearance','신용장':'letter of credit',
+  '환율':'exchange rate','보험':'insurance','운임':'freight','포장':'packaging',
+  '검수':'inspection','규격':'specification','두께':'thickness','너비':'width',
+  '길이':'length','무게':'weight','수량':'quantity','단위':'unit',
+  '거래처':'customer','공급업체':'supplier','제조업체':'manufacturer',
+  '영업':'sales','구매':'purchase','발주':'order','납품':'delivery',
+  '인보이스':'invoice','패킹리스트':'packing list','선하증권':'bill of lading',
+  // 일상 추가
+  '사무실':'office','회의':'meeting','출장':'business trip','휴가':'vacation',
+  '점심':'lunch','저녁식사':'dinner','아침식사':'breakfast','간식':'snack',
+  '운동':'exercise','수영':'swimming','달리기':'running','등산':'hiking',
+  '영화':'movie','드라마':'drama','음식점':'restaurant','카페':'cafe',
+  '지하철':'subway','택시':'taxi','자가용':'car','비용':'cost','예산':'budget',
+  '목표':'goal','계획':'plan','결과':'result','성과':'achievement',
+  '직원':'employee','고객':'customer','파트너':'partner','경쟁사':'competitor',
+};
+
+function $(id) { return document.getElementById(id); }
+
+let curEng = '', curAudioUrl = null;
+let stopping = false, playing = false;
+let recognition = null, recording = false;
+let history = [];
+let voices = [];
+let selectedVoice = null;
+
+// ── TTS 음성 초기화 ──
+function initVoices() {
+  const all = speechSynthesis.getVoices();
+  // 영어 음성만 필터
+  voices = all.filter(v => v.lang.startsWith('en'));
+  if (!voices.length) voices = all;
+
+  const sel = $('voiceSelect');
+  sel.innerHTML = '';
+
+  // 미국식 en-US 우선 정렬
+  const sorted = [
+    ...voices.filter(v => v.lang === 'en-US'),
+    ...voices.filter(v => v.lang.startsWith('en') && v.lang !== 'en-US'),
+  ];
+
+  sorted.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    const region = v.lang === 'en-US' ? '🇺🇸' : v.lang === 'en-GB' ? '🇬🇧' : v.lang === 'en-AU' ? '🇦🇺' : '🌐';
+    opt.textContent = `${region} ${v.name} (${v.lang})`;
+    if (v.lang === 'en-US') opt.style.fontWeight = '600';
+    sel.appendChild(opt);
+  });
+
+  // 기본값: en-US 중 첫 번째
+  const usIdx = sorted.findIndex(v => v.lang === 'en-US');
+  sel.value = usIdx >= 0 ? usIdx : 0;
+  selectedVoice = sorted[parseInt(sel.value)] || sorted[0];
+
+  sel.onchange = () => {
+    selectedVoice = sorted[parseInt(sel.value)];
+  };
+
+  // 배지 업데이트
+  const badge = $('ttsBadge');
+  if (selectedVoice) {
+    badge.textContent = selectedVoice.lang === 'en-US' ? '🇺🇸 en-US' : selectedVoice.lang;
+  }
+
+  const note = $('voiceNote');
+  if (voices.length === 0) {
+    note.textContent = '⚠️ 영어 TTS 음성이 없습니다. 스마트폰 설정 > 언어 > TTS에서 영어 음성을 설치해주세요.';
+    note.style.color = 'var(--danger)';
+  } else {
+    note.textContent = `${voices.length}개 영어 음성 감지됨. 미국식(🇺🇸) 음성을 선택하세요.`;
+  }
+}
+
+speechSynthesis.getVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = initVoices;
+}
+setTimeout(initVoices, 300);
+
+// ── 보안: HTML 이스케이프 (XSS 방지) ──
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+// ── 보안: 안전한 오디오 URL 검증 ──
+function safeAudioUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const normalized = url.startsWith('//') ? 'https:' + url : url;
+  try {
+    const parsed = new URL(normalized);
+    if (!['https:', 'http:'].includes(parsed.protocol)) return null;
+    return normalized;
+  } catch(e) { return null; }
+}
+
+// ── 보안: 입력값 새니타이즈 ──
+function sanitizeWord(w) {
+  if (!w || typeof w !== 'string') return '';
+  return w.replace(/[<>"'`\\]/g, '').trim().slice(0, 50);
+}
+
+// ── 번역 ──
+async function translateWord(kor) {
+  if (KO_EN[kor]) return KO_EN[kor];
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(kor)}&langpair=ko|en`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.responseStatus === 200 && d.responseData?.translatedText) {
+      const t = d.responseData.translatedText.trim();
+      if (t && t.length < 40 && /^[a-zA-Z\s\-]+$/.test(t)) {
+        return t.toLowerCase().split(/\s+/)[0];
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ── 사전 API (발음기호 + 원본 오디오) ──
+async function fetchDict(word) {
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!Array.isArray(data) || !data[0]) return null;
+    const ph = data[0].phonetics || [];
+    let usP = null, ukP = null, audioUrl = null;
+    for (const p of ph) {
+      const a = (p.audio || '').toLowerCase();
+      if ((a.includes('-us') || a.includes('_us')) && !audioUrl) audioUrl = p.audio;
+      if (p.text) {
+        if ((a.includes('-us') || a.includes('_us')) && !usP) usP = p.text;
+        if ((a.includes('-uk') || a.includes('_uk')) && !ukP) ukP = p.text;
+      }
+    }
+    if (!usP) for (const p of ph) { if (p.text) { usP = p.text; break; } }
+    if (!audioUrl) for (const p of ph) { if (p.audio) { audioUrl = p.audio; break; } }
+    return { usP, ukP, audioUrl };
+  } catch(e) { return null; }
+}
+
+// ── 검색 ──
+async function doSearch() {
+  const kor = sanitizeWord($('wordInput').value);
+  if (!kor) return;
+  hideErr();
+  $('resultCard').classList.add('hidden');
+  $('audioNote').textContent = '번역 중...';
+
+  const eng = await translateWord(kor);
+  if (!eng) { showErr(`"${kor}"의 번역을 찾을 수 없습니다. 다른 단어를 입력해보세요.`); return; }
+
+  curEng = eng; curAudioUrl = null;
+  $('dKor').textContent = kor;
+  $('dEng').textContent = eng;
+
+  const dict = await fetchDict(eng);
+  const ipaRow = $('ipaRow');
+  if (dict) {
+    ipaRow.classList.remove('hidden');
+    $('ipaUS').textContent = dict.usP || '';
+    if (dict.ukP) {
+      $('ipaUK').textContent = dict.ukP;
+      $('ipaUK').classList.remove('hidden');
+      $('badgeUK').classList.remove('hidden');
+    } else {
+      $('ipaUK').classList.add('hidden');
+      $('badgeUK').classList.add('hidden');
+    }
+    if (dict.audioUrl) {
+      curAudioUrl = safeAudioUrl(dict.audioUrl);
+      $('origBtn').style.display = '';
+      $('audioNote').textContent = '사전 원본 오디오 있음 (▶ 아이콘)  |  OS TTS 반복 재생 지원';
+    } else {
+      $('origBtn').style.display = 'none';
+      $('audioNote').textContent = 'OS 내장 TTS 엔진으로 발음 재생';
+    }
+  } else {
+    ipaRow.classList.add('hidden');
+    $('origBtn').style.display = 'none';
+    $('audioNote').textContent = 'OS 내장 TTS 엔진으로 발음 재생';
+  }
+
+  $('progWrap').classList.add('hidden');
+  $('playCounter').style.display = 'none';
+  $('resultCard').classList.remove('hidden');
+  addHist(kor, eng);
+  $('wordInput').blur(); // 키보드 내리기
+}
+
+// ── TTS 재생 (OS 내장 엔진 직접 사용) ──
+function speakTTS(text, rate, vol) {
+  return new Promise(resolve => {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = rate;
+    u.pitch = 1.0;
+    u.volume = vol;
+    if (selectedVoice) u.voice = selectedVoice;
+    u.onend = resolve;
+    u.onerror = resolve;
+    // iOS Safari 버그 대응: 재생 전 짧은 딜레이
+    setTimeout(() => speechSynthesis.speak(u), 50);
+  });
+}
+
+function sleep(ms) {
+  return new Promise(res => {
+    const t = Date.now();
+    const c = () => { if (stopping || Date.now() - t >= ms) res(); else setTimeout(c, 50); };
+    c();
+  });
+}
+
+async function startPlay() {
+  if (playing || !curEng) return;
+  playing = true; stopping = false;
+
+  const cnt = parseInt($('sRepeat').value);
+  const rate = parseInt($('sRate').value) / 10;
+  const delay = parseInt($('sDelay').value) / 10 * 1000;
+  const vol = parseInt($('sVol').value) / 100;
+
+  $('playBtn').classList.add('hidden');
+  $('stopBtn').classList.remove('hidden');
+  $('progWrap').classList.remove('hidden');
+  $('playCounter').style.display = 'block';
+
+  for (let i = 0; i < cnt; i++) {
+    if (stopping) break;
+    $('countNum').textContent = i + 1;
+    $('countLabel').textContent = `/ ${cnt} 번째 재생 중`;
+    $('progCount').textContent = `${i + 1} / ${cnt}`;
+    $('progFill').style.width = `${(i / cnt) * 100}%`;
+    $('progLabel').textContent = `재생 중...`;
+    await speakTTS(curEng, rate, vol);
+    if (i < cnt - 1 && !stopping) await sleep(delay);
+  }
+
+  const done = !stopping;
+  $('progFill').style.width = done ? '100%' : '0%';
+  $('progLabel').textContent = done ? `완료 (${cnt}회)` : '중지됨';
+  $('progCount').textContent = '';
+  $('countNum').textContent = done ? '✓' : '■';
+  $('countLabel').textContent = done ? '완료' : '중지됨';
+
+  $('playBtn').classList.remove('hidden');
+  $('stopBtn').classList.add('hidden');
+  playing = false;
+}
+
+function doStop() {
+  stopping = true; playing = false;
+  speechSynthesis.cancel();
+  $('playBtn').classList.remove('hidden');
+  $('stopBtn').classList.add('hidden');
+}
+
+// ── 원본 오디오 ──
+function playOrig() {
+  if (!curAudioUrl) return;
+  const vol = parseInt($('sVol').value) / 100;
+  const a = new Audio(curAudioUrl);
+  a.volume = vol;
+  a.play().catch(() => showErr('원본 오디오 재생 실패. TTS 재생을 이용하세요.'));
+}
+
+// ── PWA 설치 ──
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  $('installBtn').style.display = 'block';
+});
+
+window.addEventListener('appinstalled', () => {
+  $('installBtn').style.display = 'none';
+  deferredInstallPrompt = null;
+});
+
+function installApp() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => { deferredInstallPrompt = null; });
+  }
+}
+
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandalone = window.navigator.standalone === true;
+if (isIOS && !isInStandalone) {
+  $('iosBanner').style.display = 'block';
+}
+
+// ── 음성 입력 ──
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showErr('음성 인식은 Android Chrome 또는 iOS Safari에서 지원됩니다.');
+    return;
+  }
+  if (recording) { stopMic(); return; }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(t => t.stop());
+        startMic();
+      })
+      .catch(err => {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          showErr('마이크 권한이 거부되었습니다. 브라우저 주소창 자물쇠 아이콘 → 마이크 → 허용으로 변경해주세요.');
+        } else if (err.name === 'NotFoundError') {
+          showErr('마이크를 찾을 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.');
+        } else {
+          showErr(`마이크 오류 (${err.name}): 브라우저 설정에서 마이크 권한을 허용해주세요.`);
+        }
+      });
+  } else {
+    startMic();
+  }
+}
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    recording = true;
+    $('micBtn').classList.add('recording');
+    $('micStatus').textContent = '🎙 듣는 중... 한국어로 말하세요';
+  };
+  recognition.onresult = e => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    $('wordInput').value = final || interim;
+    $('micStatus').textContent = final ? `인식됨: "${final}"` : `인식 중: "${interim}"`;
+    if (final) { stopMic(); setTimeout(doSearch, 350); }
+  };
+  recognition.onerror = e => {
+    stopMic();
+    const msg = {
+      'not-allowed': '마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크를 허용해주세요.',
+      'network': '네트워크 오류입니다. 인터넷 연결을 확인해주세요.',
+      'audio-capture': '마이크를 찾을 수 없습니다.',
+      'no-speech': null,
+      'aborted': null,
+    };
+    const txt = msg[e.error];
+    if (txt) showErr(txt);
+    else if (!['no-speech','aborted'].includes(e.error)) showErr(`음성 인식 오류: ${e.error}`);
+  };
+  recognition.onend = () => stopMic();
+  recognition.start();
+}
+
+function stopMic() {
+  recording = false;
+  $('micBtn').classList.remove('recording');
+  $('micStatus').textContent = '';
+  try { recognition?.stop(); } catch(e) {}
+}
+
+// ── 히스토리 ──
+function addHist(k, e) {
+  history = history.filter(h => h.k !== k);
+  history.unshift({ k, e });
+  if (history.length > 10) history.pop();
+  renderHist();
+  saveHist();
+}
+
+function renderHist() {
+  if (!history.length) { $('histCard').classList.add('hidden'); return; }
+  $('histCard').classList.remove('hidden');
+  const container = $('histList');
+  container.innerHTML = '';
+  history.forEach(h => {
+    const chip = document.createElement('div');
+    chip.className = 'hist-chip';
+    chip.textContent = h.k;
+    const sub = document.createElement('span');
+    sub.textContent = ' ' + h.e;
+    chip.appendChild(sub);
+    chip.addEventListener('click', () => quickLoad(h.k));
+    container.appendChild(chip);
+  });
+}
+
+function quickLoad(k) {
+  $('wordInput').value = sanitizeWord(k);
+  doSearch();
+}
+
+function saveHist() {
+  try { localStorage.setItem('pron_history', JSON.stringify(history)); } catch(e) {}
+}
+
+function loadHist() {
+  try {
+    const s = localStorage.getItem('pron_history');
+    if (s) {
+      const parsed = JSON.parse(s);
+      // 각 항목 유효성 검증 후 새니타이즈
+      if (Array.isArray(parsed)) {
+        history = parsed
+          .filter(h => h && typeof h.k === 'string' && typeof h.e === 'string')
+          .map(h => ({ k: sanitizeWord(h.k), e: sanitizeWord(h.e) }))
+          .slice(0, 20);
+        renderHist();
+      }
+    }
+  } catch(e) { localStorage.removeItem('pron_history'); }
+}
+
+// ── 에러 ──
+function showErr(m) { $('errBox').textContent = m; $('errBox').style.display = 'block'; }
+function hideErr() { $('errBox').style.display = 'none'; }
+
+// ── Enter 키 ──
+$('wordInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+// ── Service Worker 등록 ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ── 초기화 ──
+loadHist();
+</script>
+</body>
+</html>
