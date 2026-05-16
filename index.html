@@ -766,6 +766,8 @@ function $(id) { return document.getElementById(id); }
 
 let curEng = '', curAudioUrl = null;
 let stopping = false, playing = false;
+// 재생 모드: 'search' | 'wordcard' | null
+let playMode = null;
 let recognition = null, recording = false;
 let history = [];
 let voices = [];
@@ -1052,8 +1054,11 @@ function sleep(ms) {
 }
 
 async function startPlay() {
-  if (playing || !curEng) return;
+  if (!curEng) return;
+  stopAllAudio();             // 단어장 재생 포함 모두 중단
+  await new Promise(r => setTimeout(r, 80)); // 중단 안정화 대기
   playing = true; stopping = false;
+  playMode = 'search';
 
   const cnt = parseInt($('sRepeat').value);
   const rate = parseInt($('sRate').value) / 10;
@@ -1086,13 +1091,38 @@ async function startPlay() {
   $('playBtn').classList.remove('hidden');
   $('stopBtn').classList.add('hidden');
   playing = false;
+  playMode = null;
+}
+
+// ── 모든 재생 즉시 중단 (탭 전환, 새 재생 시작 시 반드시 호출) ──
+function stopAllAudio() {
+  // TTS 중단
+  speechSynthesis.cancel();
+  stopping = true;
+  playing = false;
+
+  // 검색탭 UI 초기화
+  try {
+    $('playBtn').classList.remove('hidden');
+    $('stopBtn').classList.add('hidden');
+  } catch(e) {}
+
+  // 단어장 자동재생 중단
+  if (playMode === 'wordcard') {
+    wcPlaying = false;
+    try {
+      $('wcAutoBtn').textContent = '자동 재생 시작';
+      $('wcAutoBtn').className = 'btn btn-primary';
+    } catch(e) {}
+  }
+
+  playMode = null;
 }
 
 function doStop() {
-  stopping = true; playing = false;
-  speechSynthesis.cancel();
-  $('playBtn').classList.remove('hidden');
-  $('stopBtn').classList.add('hidden');
+  stopAllAudio();
+  $('progLabel').textContent = '중지됨';
+  $('progCount').textContent = '';
 }
 
 // ── 원본 오디오 ──
@@ -1133,13 +1163,11 @@ if (isIOS && !isInStandalone) {
 
 // ── 음성 입력 ──
 function stopPlayback() {
-  if (playing) {
-    stopping = true; playing = false;
-    speechSynthesis.cancel();
-    $('playBtn').classList.remove('hidden');
-    $('stopBtn').classList.add('hidden');
-    $('progLabel').textContent = '음성 입력으로 중지됨';
-    $('progCount').textContent = '';
+  const wasPlaying = playing || wcPlaying;
+  stopAllAudio();
+  if (wasPlaying) {
+    try { $('progLabel').textContent = '음성 입력으로 중지됨'; } catch(e) {}
+    try { $('progCount').textContent = ''; } catch(e) {}
   }
 }
 
@@ -1514,6 +1542,9 @@ function getCat(ko) {
 // ── 탭 전환 ──
 let currentTab = 0;
 function switchTab(n) {
+  // 다른 탭으로 이동 시 현재 탭의 재생 중단
+  if (n !== currentTab) stopAllAudio();
+
   for(let i=0;i<3;i++){
     $(`tab${i}`).classList.toggle('active', i===n);
     $(`page${i}`).style.display = i===n ? '' : 'none';
@@ -1527,8 +1558,7 @@ function switchTab(n) {
 let wcList = [];
 let wcIdx = 0;
 let wcRevealed = false;
-let wcAutoTimer = null;
-let wcPlaying = false;
+let wcPlaying = false;  // 단어장 자동재생 상태
 let wcCatFilter = '전체';
 
 function initWordCard() {
@@ -1585,16 +1615,20 @@ function wcReveal() {
 }
 
 function wcSpeak() {
-  const [, en] = wcList[wcIdx] || [];
-  if(!en) return;
-  wcReveal();
-  const vol = parseInt($('sVol').value)/100;
-  const rate = parseInt($('sRate').value)/10;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(en);
-  u.lang='en-US'; u.rate=rate; u.volume=vol;
-  if(selectedVoice) u.voice=selectedVoice;
-  speechSynthesis.speak(u);
+  return new Promise(resolve => {
+    const [, en] = wcList[wcIdx] || [];
+    if (!en) { resolve(); return; }
+    wcReveal();
+    const vol = parseInt($('sVol').value) / 100;
+    const rate = parseInt($('sRate').value) / 10;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(en);
+    u.lang = 'en-US'; u.rate = rate; u.volume = vol;
+    if (selectedVoice) u.voice = selectedVoice;
+    u.onend = resolve;
+    u.onerror = resolve;
+    setTimeout(() => speechSynthesis.speak(u), 50);
+  });
 }
 
 function wcNext() {
@@ -1613,22 +1647,52 @@ function wcRandom() {
   showWordCard();
 }
 
-function toggleAuto() {
-  if(wcPlaying) {
-    clearInterval(wcAutoTimer);
-    wcPlaying=false;
-    $('wcAutoBtn').textContent='자동 재생 시작';
-    $('wcAutoBtn').className='btn btn-primary';
-  } else {
-    wcPlaying=true;
-    $('wcAutoBtn').textContent='자동 재생 중지';
-    $('wcAutoBtn').className='btn btn-danger';
-    wcSpeak();
-    const delay = parseInt($('wcDelay').value)/10*1000;
-    wcAutoTimer = setInterval(()=>{
-      wcNext(); wcSpeak();
-    }, delay);
+async function toggleAuto() {
+  if (wcPlaying) {
+    // 중단
+    stopAllAudio();
+    return;
   }
+
+  // 검색탭 재생 중이면 먼저 중단
+  stopAllAudio();
+  await new Promise(r => setTimeout(r, 80));
+
+  wcPlaying = true;
+  playMode = 'wordcard';
+  stopping = false;
+  $('wcAutoBtn').textContent = '자동 재생 중지';
+  $('wcAutoBtn').className = 'btn btn-danger';
+
+  const getDelay = () => parseInt($('wcDelay').value) / 10 * 1000;
+
+  // async 루프: 재생 → 대기 → 다음 단어 반복
+  while (wcPlaying && !stopping) {
+    await wcSpeak();
+    if (!wcPlaying || stopping) break;
+
+    // 대기 (중단 신호 감지하면서)
+    const delay = getDelay();
+    const start = Date.now();
+    await new Promise(r => {
+      const check = () => {
+        if (!wcPlaying || stopping || Date.now() - start >= delay) r();
+        else setTimeout(check, 50);
+      };
+      check();
+    });
+
+    if (!wcPlaying || stopping) break;
+    wcNext();
+  }
+
+  // 루프 종료 후 UI 초기화
+  wcPlaying = false;
+  playMode = null;
+  try {
+    $('wcAutoBtn').textContent = '자동 재생 시작';
+    $('wcAutoBtn').className = 'btn btn-primary';
+  } catch(e) {}
 }
 
 // ── CSV 로드 ──
