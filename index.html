@@ -9,19 +9,10 @@
 <meta name="theme-color" content="#185FA5" />
 <title>영어 발음 연습</title>
 <link rel="manifest" href="manifest.json" />
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-inline';
-  style-src 'self' 'unsafe-inline';
-  connect-src 'self' https://api.mymemory.translated.net https://api.dictionaryapi.dev;
-  media-src 'self' https: blob:;
-  img-src 'self' data:;
-  font-src 'self';
-  worker-src 'self';
-" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://api.mymemory.translated.net https://api.dictionaryapi.dev https://lingva.ml; media-src 'self' https: blob:; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; worker-src 'self';" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg: #f5f7fa;
@@ -249,15 +240,16 @@
     margin-bottom: 12px;
   }
   .ipa-text {
-    font-size: 16px;
-    font-family: 'Noto Sans', 'Noto Serif', 'DejaVu Sans', 'FreeSerif', 'Arial Unicode MS', 'Segoe UI', sans-serif;
+    font-size: 17px;
+    font-family: 'Noto Sans Symbols 2', 'Noto Sans', 'Segoe UI', 'Arial Unicode MS', sans-serif;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 4px 10px;
-    letter-spacing: 1px;
+    padding: 5px 12px;
+    letter-spacing: 2px;
     color: var(--text);
     unicode-bidi: plaintext;
+    word-break: break-all;
   }
   .badge {
     font-size: 10px;
@@ -493,6 +485,17 @@
       <select class="voice-select" id="voiceSelect"></select>
       <p class="voice-note" id="voiceNote">스마트폰 OS에 설치된 영어 음성 목록입니다. 미국식(en-US)을 추천합니다.</p>
     </div>
+
+    <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border-radius:var(--radius-sm); padding:10px 14px;">
+      <div>
+        <p style="font-size:13px; font-weight:600; color:var(--text); margin:0;">단어 검색 후 자동 재생</p>
+        <p style="font-size:11px; color:var(--text3); margin:2px 0 0;">찾은 즉시 발음을 바로 재생합니다</p>
+      </div>
+      <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+        <input type="checkbox" id="autoPlayToggle" checked style="opacity:0; width:0; height:0;" onchange="saveSettings()" />
+        <span id="autoPlaySlider" style="position:absolute; cursor:pointer; inset:0; background:var(--border); border-radius:24px; transition:0.3s;" onclick="toggleAutoPlay()"></span>
+      </label>
+    </div>
   </div>
 
   <!-- 결과 -->
@@ -649,38 +652,39 @@ const KO_EN = {
   '학습':'learning','행복':'happiness','현재':'present','협력':'cooperation','환경':'environment',
   '활동':'activity','효과':'effect','가게':'store','가구':'furniture','가스':'gas',
   '가을':'autumn','가족':'family','각도':'angle','간호사':'nurse','강의':'lecture',
-  '건물':'building','게임':'game','결과':'result','경기':'game','경찰':'police',
-  '계단':'stairs','고기':'meat','공기':'air','공장':'factory','공항':'airport',
-  '과학':'science','교사':'teacher','교통':'traffic','구름':'cloud','국가':'country',
-  '군인':'soldier','그림':'painting','근육':'muscle','기계':'machine','기후':'climate',
-  '날개':'wing','남극':'south pole','내일':'tomorrow','노트북':'laptop','눈썹':'eyebrow',
-  '다리':'bridge','담요':'blanket','대통령':'president','도로':'road','도서관':'library',
-  '독서':'reading','동물':'animal','두통':'headache','등산':'hiking','디자인':'design',
-  '라디오':'radio','로봇':'robot','마음':'mind','만화':'cartoon','모래':'sand',
-  '모험':'adventure','목소리':'voice','무대':'stage','문화':'culture','미술':'art',
-  '바위':'rock','박물관':'museum','반지':'ring','발음':'pronunciation','방향':'direction',
-  '배낭':'backpack','버스':'bus','벽':'wall','별자리':'constellation','병원':'hospital',
-  '보물':'treasure','봉사':'volunteer','부모':'parents','비밀':'secret','비행기':'airplane',
-  '사계절':'four seasons','사막':'desert','사진':'photo','산소':'oxygen','상자':'box',
-  '색깔':'color','생물':'biology','서랍':'drawer','선물':'gift','설탕':'sugar',
-  '섬':'island','소방관':'firefighter','소설':'novel','수학':'math','숙제':'homework',
-  '스마트폰':'smartphone','시험':'exam','식물':'plant','신문':'newspaper','싸움':'fight',
-  '아이디어':'idea','악기':'instrument','안경':'glasses','야채':'vegetable','약국':'pharmacy',
-  '어휘':'vocabulary','언어':'language','얼굴':'face','에너지':'energy','여름':'summer',
-  '역할':'role','연구':'research','영웅':'hero','예술':'art','온도':'temperature',
-  '왕':'king','외국':'foreign country','우주':'universe','운동장':'playground','원칙':'principle',
-  '월급':'salary','위험':'danger','유리':'glass','음료':'beverage','의견':'opinion',
-  '의미':'meaning','이웃':'neighbor','인물':'figure','인터뷰':'interview','일기':'diary',
-  '자동차':'car','자전거':'bicycle','작가':'author','잠자리':'dragonfly','장갑':'gloves',
-  '장면':'scene','재능':'talent','저축':'savings','전기':'electricity','전통':'tradition',
-  '정원':'garden','제목':'title','조각':'piece','종교':'religion','주말':'weekend',
-  '중학교':'middle school','지구':'earth','지도':'map','진실':'truth','차이':'difference',
-  '창문':'window','채소':'vegetable','초등학교':'elementary school','축구':'soccer','축제':'festival',
-  '출발':'departure','취미':'hobby','카드':'card','태양':'sun','태풍':'typhoon',
-  '토론':'debate','특징':'characteristic','파도':'wave','편의점':'convenience store','포기':'giving up',
-  '표정':'expression','풍경':'scenery','학년':'grade','한국':'Korea','항공':'aviation',
-  '해결':'solution','현상':'phenomenon','화산':'volcano','확인':'confirmation','환자':'patient',
-  '훈련':'training','희망':'hope',
+  '개구리':'frog','거울':'mirror','건물':'building','게임':'game','결과':'result',
+  '경기':'game','경찰':'police','계단':'stairs','고기':'meat','고래':'whale',
+  '공기':'air','공장':'factory','공항':'airport','과학':'science','교사':'teacher',
+  '교통':'traffic','구름':'cloud','국가':'country','군인':'soldier','그림':'painting',
+  '근육':'muscle','기계':'machine','기후':'climate','나비':'butterfly','날개':'wing',
+  '남극':'south pole','내일':'tomorrow','냉장고':'refrigerator','노트북':'laptop','눈썹':'eyebrow',
+  '다리':'bridge','달력':'calendar','담요':'blanket','대통령':'president','도로':'road',
+  '도서관':'library','독서':'reading','동물':'animal','두통':'headache','등산':'hiking',
+  '디자인':'design','라디오':'radio','로봇':'robot','마음':'mind','만화':'cartoon',
+  '모래':'sand','모험':'adventure','목소리':'voice','무대':'stage','문화':'culture',
+  '미술':'art','바위':'rock','박물관':'museum','반지':'ring','발음':'pronunciation',
+  '방향':'direction','배낭':'backpack','버스':'bus','벽':'wall','별자리':'constellation',
+  '병원':'hospital','보물':'treasure','봉사':'volunteer','부모':'parents','비밀':'secret',
+  '비행기':'airplane','사계절':'four seasons','사막':'desert','사진':'photo','산소':'oxygen',
+  '상자':'box','색깔':'color','생물':'biology','서랍':'drawer','선물':'gift',
+  '설탕':'sugar','섬':'island','소방관':'firefighter','소설':'novel','수학':'math',
+  '숙제':'homework','스마트폰':'smartphone','시험':'exam','식물':'plant','신문':'newspaper',
+  '싸움':'fight','아이디어':'idea','악기':'instrument','안경':'glasses','야채':'vegetable',
+  '약국':'pharmacy','어휘':'vocabulary','언어':'language','얼굴':'face','에너지':'energy',
+  '여름':'summer','역할':'role','연구':'research','영웅':'hero','예술':'art',
+  '온도':'temperature','왕':'king','외국':'foreign country','우주':'universe','운동장':'playground',
+  '원칙':'principle','월급':'salary','위험':'danger','유리':'glass','음료':'beverage',
+  '의견':'opinion','의미':'meaning','이웃':'neighbor','인물':'figure','인터뷰':'interview',
+  '일기':'diary','자동차':'car','자전거':'bicycle','작가':'author','잠자리':'dragonfly',
+  '장갑':'gloves','장면':'scene','재능':'talent','저축':'savings','전기':'electricity',
+  '전통':'tradition','정원':'garden','제목':'title','조각':'piece','종교':'religion',
+  '주말':'weekend','중학교':'middle school','지구':'earth','지도':'map','진실':'truth',
+  '차이':'difference','창문':'window','채소':'vegetable','초등학교':'elementary school','축구':'soccer',
+  '축제':'festival','출발':'departure','취미':'hobby','카드':'card','컵':'cup',
+  '태양':'sun','태풍':'typhoon','텔레비전':'television','토론':'debate','특징':'characteristic',
+  '파도':'wave','편의점':'convenience store','포기':'giving up','표정':'expression','풍경':'scenery',
+  '학년':'grade','한국':'Korea','항공':'aviation','해결':'solution','현상':'phenomenon',
+  '화산':'volcano','확인':'confirmation','환자':'patient','훈련':'training','희망':'hope',
   // 동사
   '가르치다':'teach','감사하다':'thank','고르다':'choose','나타나다':'appear','놀라다':'surprise',
   '느끼다':'feel','달성하다':'achieve','돕다':'help','동의하다':'agree','따르다':'follow',
@@ -703,16 +707,24 @@ const KO_EN = {
   // 접속사
   '그러나':'however','그러므로':'therefore','만약':'if',
   // 동물
-  '개구리':'frog','고래':'whale','나비':'butterfly','고양이':'cat','강아지':'dog',
-  '토끼':'rabbit','곰':'bear','사자':'lion','호랑이':'tiger','코끼리':'elephant',
-  '기린':'giraffe','원숭이':'monkey','펭귄':'penguin','여우':'fox','늑대':'wolf',
-  '사슴':'deer','말':'horse','소':'cow','돼지':'pig','양':'sheep',
-  '닭':'chicken','오리':'duck','독수리':'eagle','앵무새':'parrot','상어':'shark',
-  '돌고래':'dolphin','문어':'octopus','거북이':'turtle','뱀':'snake','악어':'crocodile',
-  '다람쥐':'squirrel','햄스터':'hamster','얼룩말':'zebra','하마':'hippo','낙타':'camel',
-  '캥거루':'kangaroo','코알라':'koala','판다':'panda','북극곰':'polar bear','홍학':'flamingo',
-  '공작':'peacock','참새':'sparrow','까마귀':'crow','부엉이':'owl','벌':'bee',
-  '개미':'ant','무당벌레':'ladybug','달팽이':'snail','지렁이':'worm','금붕어':'goldfish',
+  '고양이':'cat','강아지':'dog','토끼':'rabbit','곰':'bear','사자':'lion',
+  '호랑이':'tiger','코끼리':'elephant','기린':'giraffe','원숭이':'monkey','펭귄':'penguin',
+  '여우':'fox','늑대':'wolf','사슴':'deer','말':'horse','소':'cow',
+  '돼지':'pig','양':'sheep','닭':'chicken','오리':'duck','독수리':'eagle',
+  '앵무새':'parrot','상어':'shark','돌고래':'dolphin','문어':'octopus','거북이':'turtle',
+  '뱀':'snake','악어':'crocodile','다람쥐':'squirrel','햄스터':'hamster','얼룩말':'zebra',
+  '하마':'hippo','낙타':'camel','캥거루':'kangaroo','코알라':'koala','판다':'panda',
+  '북극곰':'polar bear','홍학':'flamingo','공작':'peacock','참새':'sparrow','까마귀':'crow',
+  '부엉이':'owl','벌':'bee','개미':'ant','무당벌레':'ladybug','달팽이':'snail',
+  '지렁이':'worm','금붕어':'goldfish','제비':'swallow','두루미':'crane','비둘기':'pigeon',
+  '딱따구리':'woodpecker','올빼미':'owl','펠리컨':'pelican','타조':'ostrich','황새':'stork',
+  '물개':'seal','해달':'sea otter','북극여우':'arctic fox','들소':'bison','코뿔소':'rhinoceros',
+  '하이에나':'hyena','치타':'cheetah','재규어':'jaguar','오랑우탄':'orangutan','고릴라':'gorilla',
+  '침팬지':'chimpanzee','미어캣':'meerkat','아르마딜로':'armadillo','두더지':'mole','고슴도치':'hedgehog',
+  '족제비':'weasel','수달':'otter','라마':'llama','들고양이':'wildcat','스컹크':'skunk',
+  '너구리':'raccoon','카멜레온':'chameleon','이구아나':'iguana','도마뱀':'lizard','가오리':'stingray',
+  '해파리':'jellyfish','불가사리':'starfish','새우':'shrimp','게':'crab','바닷가재':'lobster',
+  '전복':'abalone','조개':'clam','오징어':'squid',
   // 식물
   '장미':'rose','해바라기':'sunflower','튤립':'tulip','벚꽃':'cherry blossom','국화':'chrysanthemum',
   '난초':'orchid','민들레':'dandelion','라벤더':'lavender','선인장':'cactus','대나무':'bamboo',
@@ -724,7 +736,6 @@ const KO_EN = {
   '파인애플':'pineapple','키위':'kiwi','레몬':'lemon','라임':'lime','멜론':'melon',
   '블루베리':'blueberry','자두':'plum','감':'persimmon','귤':'tangerine','코코넛':'coconut',
   // 생활용품
-  '거울':'mirror','냉장고':'refrigerator','달력':'calendar','컵':'cup','텔레비전':'television',
   '침대':'bed','책상':'desk','의자':'chair','소파':'sofa','세탁기':'washing machine',
   '전자레인지':'microwave','에어컨':'air conditioner','선풍기':'fan','청소기':'vacuum cleaner','다리미':'iron',
   '냄비':'pot','프라이팬':'frying pan','젓가락':'chopsticks','숟가락':'spoon','포크':'fork',
@@ -732,6 +743,15 @@ const KO_EN = {
   '샴푸':'shampoo','수건':'towel','빗':'comb','가위':'scissors','우산':'umbrella',
   '시계':'clock','가방':'bag','지갑':'wallet','열쇠':'key','양초':'candle',
   '액자':'picture frame','쿠션':'cushion','이불':'blanket','베개':'pillow',
+  // 신체부위
+  '머리':'head','눈':'eye','코':'nose','입':'mouth','귀':'ear',
+  '목':'neck','어깨':'shoulder','팔':'arm','팔꿈치':'elbow','손':'hand',
+  '손가락':'finger','손목':'wrist','가슴':'chest','허리':'waist','등':'back',
+  '엉덩이':'hip','무릎':'knee','발':'foot','발가락':'toe','발목':'ankle',
+  '이마':'forehead','뺨':'cheek','턱':'chin','속눈썹':'eyelash','혀':'tongue',
+  '이':'tooth','입술':'lip','손톱':'fingernail','발톱':'toenail','피부':'skin',
+  '뼈':'bone','심장':'heart','폐':'lung','위':'stomach','뇌':'brain',
+  '피':'blood',
 };
 
 function $(id) { return document.getElementById(id); }
@@ -899,12 +919,16 @@ async function fetchDict(word) {
     if (!usP) for (const p of ph) { if (p.text) { usP = p.text; break; } }
     if (!audioUrl) for (const p of ph) { if (p.audio) { audioUrl = p.audio; break; } }
 
-    // IPA 텍스트 정제: 제어문자·깨진 바이트 제거, 슬래시/브래킷 포함된 것만 사용
+    // IPA 텍스트 정제: 제어문자·깨진 바이트 제거
     function cleanIPA(s) {
       if (!s) return null;
+      // 제어문자 제거
       const cleaned = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
-      // 슬래시나 대괄호가 없으면 IPA 기호가 아닐 가능성 높음
-      if (!cleaned || cleaned.length < 2) return null;
+      if (!cleaned || cleaned.length < 1) return null;
+      // 슬래시/괄호로 감싸기 (없으면 추가)
+      if (!cleaned.startsWith('/') && !cleaned.startsWith('[')) {
+        return '/' + cleaned + '/';
+      }
       return cleaned;
     }
     return { usP: cleanIPA(usP), ukP: cleanIPA(ukP), audioUrl };
@@ -958,6 +982,11 @@ async function doSearch() {
   $('resultCard').classList.remove('hidden');
   addHist(kor, eng);
   $('wordInput').blur(); // 키보드 내리기
+
+  // 자동재생 설정이 켜져 있으면 바로 재생
+  if ($('autoPlayToggle').checked) {
+    setTimeout(() => startPlay(), 400);
+  }
 }
 
 // ── TTS 재생 (OS 내장 엔진 직접 사용) ──
@@ -1066,12 +1095,24 @@ if (isIOS && !isInStandalone) {
 }
 
 // ── 음성 입력 ──
+function stopPlayback() {
+  if (playing) {
+    stopping = true; playing = false;
+    speechSynthesis.cancel();
+    $('playBtn').classList.remove('hidden');
+    $('stopBtn').classList.add('hidden');
+    $('progLabel').textContent = '음성 입력으로 중지됨';
+    $('progCount').textContent = '';
+  }
+}
+
 function toggleMic() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     showErr('음성 인식은 Android Chrome 또는 iOS Safari에서 지원됩니다.');
     return;
   }
   if (recording) { stopMic(); return; }
+  stopPlayback(); // 재생 중이면 즉시 중단
 
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1094,19 +1135,6 @@ function toggleMic() {
 }
 
 function startMic() {
-  // 재생 중이면 즉시 중단
-  if (playing) {
-    stopping = true;
-    playing = false;
-    speechSynthesis.cancel();
-    $('playBtn').classList.remove('hidden');
-    $('stopBtn').classList.add('hidden');
-    if ($('progWrap')) {
-      $('progLabel').textContent = '음성 입력으로 중지됨';
-      $('progCount').textContent = '';
-    }
-  }
-
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
   recognition.lang = 'ko-KR';
@@ -1240,8 +1268,37 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── 자동재생 토글 ──
+function toggleAutoPlay() {
+  const cb = $('autoPlayToggle');
+  cb.checked = !cb.checked;
+  updateAutoPlaySlider();
+  saveSettings();
+}
+function updateAutoPlaySlider() {
+  const on = $('autoPlayToggle').checked;
+  $('autoPlaySlider').style.background = on ? 'var(--primary)' : 'var(--border)';
+  $('autoPlaySlider').style.setProperty('--x', on ? '20px' : '0px');
+}
+function saveSettings() {
+  try { localStorage.setItem('autoPlay', $('autoPlayToggle').checked ? '1' : '0'); } catch(e){}
+}
+function loadSettings() {
+  try {
+    const v = localStorage.getItem('autoPlay');
+    if (v !== null) $('autoPlayToggle').checked = v === '1';
+    else $('autoPlayToggle').checked = true; // 기본값: ON
+    updateAutoPlaySlider();
+    // 슬라이더 의사 요소를 JS로 그림
+    const style = document.createElement('style');
+    style.textContent = '#autoPlaySlider::before { content:""; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; transform: translateX(var(--x, 0px)); }';
+    document.head.appendChild(style);
+  } catch(e){}
+}
+
 // ── 초기화 ──
 loadHist();
+loadSettings();
 
 // ── 카테고리 메타데이터 ──
 const KO_CAT = {};
