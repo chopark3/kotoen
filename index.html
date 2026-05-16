@@ -20,6 +20,8 @@
   worker-src 'self';
 " />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg: #f5f7fa;
@@ -248,13 +250,14 @@
   }
   .ipa-text {
     font-size: 16px;
-    font-family: 'Courier New', monospace;
+    font-family: 'Noto Sans', 'Noto Serif', 'DejaVu Sans', 'FreeSerif', 'Arial Unicode MS', 'Segoe UI', sans-serif;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 4px 10px;
     letter-spacing: 1px;
     color: var(--text);
+    unicode-bidi: plaintext;
   }
   .badge {
     font-size: 10px;
@@ -573,6 +576,50 @@ const KO_EN = {
   '지하철':'subway','택시':'taxi','자가용':'car','비용':'cost','예산':'budget',
   '목표':'goal','계획':'plan','결과':'result','성과':'achievement',
   '직원':'employee','고객':'customer','파트너':'partner','경쟁사':'competitor',
+  // 동물
+  '곰':'bear','토끼':'rabbit','여우':'fox','늑대':'wolf','사슴':'deer',
+  '원숭이':'monkey','펭귄':'penguin','독수리':'eagle','상어':'shark','고래':'whale',
+  '거북이':'turtle','뱀':'snake','개구리':'frog','다람쥐':'squirrel','햄스터':'hamster',
+  '앵무새':'parrot','오리':'duck','공작':'peacock','사자':'lion','표범':'leopard',
+  '기린':'giraffe','얼룩말':'zebra','하마':'hippo','악어':'crocodile','낙타':'camel',
+  // 신체
+  '눈썹':'eyebrow','속눈썹':'eyelash','귀':'ear','코':'nose','입':'mouth',
+  '이':'tooth','혀':'tongue','턱':'jaw','어깨':'shoulder','팔꿈치':'elbow',
+  '손목':'wrist','손가락':'finger','무릎':'knee','발목':'ankle','발가락':'toe',
+  '가슴':'chest','배꼽':'belly button','허리':'waist','등':'back','엉덩이':'hip',
+  // 음식/요리
+  '삼겹살':'pork belly','된장':'soybean paste','김치':'kimchi','라면':'ramen',
+  '떡':'rice cake','만두':'dumpling','순두부':'soft tofu','냉면':'cold noodle',
+  '잡채':'glass noodles','불고기':'bulgogi','갈비':'ribs','전':'pancake',
+  '식혜':'rice punch','수정과':'cinnamon punch','녹차':'green tea','홍차':'black tea',
+  // 직업/직책
+  '사장':'CEO','회장':'chairman','팀장':'team leader','직원':'employee',
+  '간호사':'nurse','변호사':'lawyer','판사':'judge','검사':'prosecutor',
+  '회계사':'accountant','건축가':'architect','디자이너':'designer','프로그래머':'programmer',
+  // 가전/전자
+  '냉장고':'refrigerator','세탁기':'washing machine','에어컨':'air conditioner',
+  '청소기':'vacuum cleaner','전자레인지':'microwave','오븐':'oven','선풍기':'fan',
+  '텔레비전':'television','리모컨':'remote control','충전기':'charger','이어폰':'earphone',
+  // 자연/환경
+  '지진':'earthquake','태풍':'typhoon','홍수':'flood','가뭄':'drought',
+  '화산':'volcano','빙하':'glacier','사막':'desert','열대우림':'rainforest',
+  '오존':'ozone','탄소':'carbon','미세먼지':'fine dust','재활용':'recycling',
+  // 스포츠
+  '야구':'baseball','농구':'basketball','배구':'volleyball','테니스':'tennis',
+  '골프':'golf','스키':'skiing','수영':'swimming','마라톤':'marathon',
+  '권투':'boxing','태권도':'taekwondo','유도':'judo','검도':'kendo',
+  // 교통/여행
+  '여권':'passport','비자':'visa','환승':'transfer','터미널':'terminal',
+  '짐':'luggage','호텔':'hotel','리조트':'resort','캠핑':'camping',
+  '등산':'hiking','낚시':'fishing','여행사':'travel agency',
+  // 건강/의료
+  '두통':'headache','발열':'fever','기침':'cough','감기':'cold','독감':'flu',
+  '알레르기':'allergy','수술':'surgery','입원':'hospitalization','퇴원':'discharge',
+  '처방':'prescription','복용':'dosage','혈압':'blood pressure','당뇨':'diabetes',
+  // 감정/상태
+  '기쁨':'joy','슬픔':'sadness','분노':'anger','두려움':'fear','놀람':'surprise',
+  '지루함':'boredom','피곤함':'fatigue','설렘':'excitement','그리움':'longing',
+  '후회':'regret','감사':'gratitude','자랑스러움':'pride',
 };
 
 function $(id) { return document.getElementById(id); }
@@ -667,19 +714,56 @@ function sanitizeWord(w) {
 }
 
 // ── 번역 ──
-async function translateWord(kor) {
+// 유사 단어 매칭: 입력이 사전 키를 포함하거나 포함되는 경우
+function fuzzyLookup(kor) {
   if (KO_EN[kor]) return KO_EN[kor];
+  // 완전 포함 매칭 (예: "곰돌이" → "곰")
+  for (const [k, v] of Object.entries(KO_EN)) {
+    if (kor.includes(k) && k.length >= 1) return v;
+  }
+  // 첫 글자만 일치하는 가장 짧은 키
+  const firstChar = kor[0];
+  const candidates = Object.entries(KO_EN).filter(([k]) => k.startsWith(firstChar));
+  if (candidates.length === 1) return candidates[0][1];
+  return null;
+}
+
+async function translateWord(kor) {
+  // 1. 정확 매칭
+  const exact = KO_EN[kor];
+  if (exact) return exact;
+
+  // 2. 유사 매칭
+  const fuzzy = fuzzyLookup(kor);
+  if (fuzzy) return fuzzy;
+
+  // 3. MyMemory API (1차)
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(kor)}&langpair=ko|en`;
-    const r = await fetch(url);
+    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
     const d = await r.json();
     if (d.responseStatus === 200 && d.responseData?.translatedText) {
       const t = d.responseData.translatedText.trim();
-      if (t && t.length < 40 && /^[a-zA-Z\s\-]+$/.test(t)) {
+      // 영문자·공백·하이픈만 허용, 50자 이하
+      if (t && t.length < 50 && /^[a-zA-Z\s\-]+$/.test(t)) {
         return t.toLowerCase().split(/\s+/)[0];
       }
     }
   } catch(e) {}
+
+  // 4. Lingva Translate (2차 폴백 - CORS 허용 무료 API)
+  try {
+    const url2 = `https://lingva.ml/api/v1/ko/en/${encodeURIComponent(kor)}`;
+    const r2 = await fetch(url2, { signal: AbortSignal.timeout(5000) });
+    const d2 = await r2.json();
+    if (d2.translation) {
+      const t2 = d2.translation.trim();
+      if (t2 && t2.length < 50 && /^[a-zA-Z\s\-]+$/.test(t2)) {
+        return t2.toLowerCase().split(/\s+/)[0];
+      }
+    }
+  } catch(e) {}
+
   return null;
 }
 
@@ -702,7 +786,16 @@ async function fetchDict(word) {
     }
     if (!usP) for (const p of ph) { if (p.text) { usP = p.text; break; } }
     if (!audioUrl) for (const p of ph) { if (p.audio) { audioUrl = p.audio; break; } }
-    return { usP, ukP, audioUrl };
+
+    // IPA 텍스트 정제: 제어문자·깨진 바이트 제거, 슬래시/브래킷 포함된 것만 사용
+    function cleanIPA(s) {
+      if (!s) return null;
+      const cleaned = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+      // 슬래시나 대괄호가 없으면 IPA 기호가 아닐 가능성 높음
+      if (!cleaned || cleaned.length < 2) return null;
+      return cleaned;
+    }
+    return { usP: cleanIPA(usP), ukP: cleanIPA(ukP), audioUrl };
   } catch(e) { return null; }
 }
 
@@ -889,11 +982,25 @@ function toggleMic() {
 }
 
 function startMic() {
+  // 재생 중이면 즉시 중단
+  if (playing) {
+    stopping = true;
+    playing = false;
+    speechSynthesis.cancel();
+    $('playBtn').classList.remove('hidden');
+    $('stopBtn').classList.add('hidden');
+    if ($('progWrap')) {
+      $('progLabel').textContent = '음성 입력으로 중지됨';
+      $('progCount').textContent = '';
+    }
+  }
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
   recognition.lang = 'ko-KR';
   recognition.continuous = false;
   recognition.interimResults = true;
+  recognition.maxAlternatives = 3;
 
   recognition.onstart = () => {
     recording = true;
@@ -903,11 +1010,32 @@ function startMic() {
   recognition.onresult = e => {
     let interim = '', final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
+      const result = e.results[i];
+      if (result.isFinal) {
+        // 신뢰도 0.3 이상인 최적 후보 선택
+        let best = result[0].transcript;
+        let bestConf = result[0].confidence || 0;
+        for (let j = 1; j < result.length; j++) {
+          if ((result[j].confidence || 0) > bestConf) {
+            best = result[j].transcript;
+            bestConf = result[j].confidence;
+          }
+        }
+        // 사전에 있는 후보 우선 (더 정확한 단어 선택)
+        for (let j = 0; j < result.length; j++) {
+          const t = result[j].transcript.trim();
+          if (KO_EN[t]) { best = t; break; }
+        }
+        final += best;
+      } else {
+        interim += result[0].transcript;
+      }
     }
-    $('wordInput').value = final || interim;
-    $('micStatus').textContent = final ? `인식됨: "${final}"` : `인식 중: "${interim}"`;
+    const word = (final || interim).trim();
+    $('wordInput').value = word;
+    $('micStatus').textContent = final
+      ? `인식됨: "${final}"`
+      : `인식 중: "${interim}"`;
     if (final) { stopMic(); setTimeout(doSearch, 350); }
   };
   recognition.onerror = e => {
