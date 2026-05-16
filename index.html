@@ -376,6 +376,30 @@
     transition: all 0.15s;
   }
   .hist-chip:active { background: var(--primary-light); border-color: var(--primary); }
+
+  /* 탭 */
+  .tab-bar { display:flex; gap:4px; margin-bottom:12px; background:var(--surface2); border-radius:var(--radius-sm); padding:3px; }
+  .tab-btn { flex:1; padding:8px 4px; border:none; border-radius:6px; font-size:13px; font-weight:600; background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .tab-btn.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+
+  /* 단어장 카드 */
+  .word-card { background:var(--surface); border-radius:var(--radius); padding:20px; text-align:center; box-shadow:var(--shadow); margin-bottom:8px; }
+  .word-card .ko { font-size:32px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .word-card .en { font-size:22px; color:var(--primary); font-weight:600; display:none; }
+  .word-card .cat-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; background:var(--primary-light); color:var(--primary-dark); margin-bottom:10px; }
+  .wc-btns { display:flex; gap:8px; }
+
+  /* CSV 업로드 */
+  .upload-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:20px; text-align:center; cursor:pointer; transition:border-color 0.2s; }
+  .upload-zone:hover { border-color:var(--primary); }
+  .upload-zone input { display:none; }
+  .upload-zone p { font-size:14px; color:var(--text2); margin:6px 0 0; }
+  .dict-stats { font-size:12px; color:var(--text3); margin-top:8px; }
+
+  /* 카테고리 필터 */
+  .cat-filter { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+  .cat-chip { padding:4px 10px; border-radius:20px; font-size:12px; border:1px solid var(--border); background:var(--surface2); color:var(--text2); cursor:pointer; }
+  .cat-chip.active { background:var(--primary); border-color:var(--primary); color:#fff; }
   .hist-chip span { color: var(--text3); margin-left: 4px; }
 
   /* Error */
@@ -415,6 +439,15 @@
 </div>
 
 <div class="scroll">
+  <!-- 탭 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab0" onclick="switchTab(0)">검색</button>
+    <button class="tab-btn" id="tab1" onclick="switchTab(1)">단어장</button>
+    <button class="tab-btn" id="tab2" onclick="switchTab(2)">사전관리</button>
+  </div>
+
+  <!-- ══ 탭 0: 검색 ══ -->
+  <div id="page0">
 
   <!-- 입력 -->
   <div class="card">
@@ -521,105 +554,184 @@
   <!-- 에러 -->
   <div class="err-box" id="errBox"></div>
 
+  </div><!-- page0 -->
+
+  <!-- ══ 탭 1: 단어장 ══ -->
+  <div id="page1" style="display:none;">
+    <div class="card">
+      <div class="card-label">카테고리</div>
+      <div class="cat-filter" id="catFilter"></div>
+    </div>
+
+    <div class="word-card" id="wordCard">
+      <div class="ko" id="wcKo">단어 없음</div>
+      <span class="cat-badge" id="wcCat"></span>
+      <div class="en" id="wcEn"></div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" id="wcProgress"></div>
+      <div class="wc-btns">
+        <button class="btn btn-secondary" style="flex:1;" onclick="wcReveal()">뜻 보기</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="wcSpeak()">
+          <svg class="icon" stroke="#fff" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          발음 듣기
+        </button>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px;" id="wcNavBtns">
+        <button class="btn btn-secondary" style="flex:1;" onclick="wcPrev()">이전</button>
+        <button class="btn btn-secondary" style="flex:1;" onclick="wcNext()">다음</button>
+        <button class="btn btn-secondary" style="flex:1;font-size:12px;" onclick="wcRandom()">랜덤</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="card-label" style="margin:0;">자동 재생</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">간격</span>
+        <input type="range" min="10" max="80" step="5" value="30" id="wcDelay" oninput="$('wcDelayOut').textContent=(this.value/10).toFixed(1)+'s'" />
+        <span class="slider-val" id="wcDelayOut">3.0s</span>
+      </div>
+      <button class="btn btn-primary" id="wcAutoBtn" onclick="toggleAuto()" style="margin-top:8px;">자동 재생 시작</button>
+    </div>
+  </div><!-- page1 -->
+
+  <!-- ══ 탭 2: 사전 관리 ══ -->
+  <div id="page2" style="display:none;">
+    <div class="card">
+      <div class="card-label">CSV 사전 파일 불러오기</div>
+      <div class="upload-zone" onclick="$('csvFile').click()">
+        <svg class="icon" style="font-size:32px;width:36px;height:36px;color:var(--text3);" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>CSV 파일 선택 (한글,영어,카테고리)</p>
+        <input type="file" id="csvFile" accept=".csv" onchange="loadCSV(event)" />
+      </div>
+      <p class="dict-stats" id="dictStats"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-label">단어 직접 추가</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="addKo" placeholder="한글" style="flex:1;font-size:15px;" />
+        <input type="text" id="addEn" placeholder="English" style="flex:1;font-size:15px;" />
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="addCat" placeholder="카테고리 (선택)" style="flex:1;font-size:15px;" />
+        <button class="btn btn-primary" style="flex:0;padding:0 16px;" onclick="addWord()">추가</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="card-label" style="margin:0;">현재 단어 목록</span>
+        <button onclick="downloadCSV()" style="font-size:12px;padding:4px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;">CSV 저장</button>
+      </div>
+      <input type="text" id="searchDict" placeholder="단어 검색..." style="width:100%;font-size:14px;margin-bottom:8px;" oninput="renderDictList()" />
+      <div id="dictList" style="max-height:300px;overflow-y:auto;"></div>
+    </div>
+  </div><!-- page2 -->
+
 </div><!-- scroll -->
 
 <script>
 // ── 한국어→영어 내장 사전 (250+) ──
 const KO_EN = {
-  '가방':'bag','가족':'family','가게':'store','가격':'price','각재':'timber',
-  '강':'river','강아지':'dog','겨울':'winter','고양이':'cat','고기':'meat',
-  '공':'ball','공기':'air','공부':'study','공장':'factory','공항':'airport',
-  '과일':'fruit','교실':'classroom','구름':'cloud','그림':'picture','금':'gold',
-  '기차':'train','길':'road','나라':'country','나무':'tree','나비':'butterfly',
-  '날씨':'weather','남자':'man','낮':'daytime','노래':'song','눈':'snow',
-  '눈물':'tear','달':'moon','달력':'calendar','닭':'chicken','대학교':'university',
-  '도서관':'library','돈':'money','돼지':'pig','두부':'tofu','딸기':'strawberry',
-  '마을':'village','마음':'heart','말':'horse','맥주':'beer','머리':'head',
-  '모자':'hat','목':'neck','문':'door','물':'water','물고기':'fish',
-  '바나나':'banana','바다':'sea','바람':'wind','박물관':'museum','발':'foot',
-  '밥':'rice','배':'stomach','배추':'cabbage','버스':'bus','별':'star',
-  '병원':'hospital','봄':'spring','불':'fire','비':'rain','비행기':'airplane',
-  '빵':'bread','사과':'apple','사람':'person','사랑':'love','사전':'dictionary',
-  '산':'mountain','새':'bird','색깔':'color','생일':'birthday','서점':'bookstore',
-  '선물':'gift','선생님':'teacher','소':'cow','소금':'salt','손':'hand',
-  '수박':'watermelon','숲':'forest','시장':'market','식당':'restaurant','신발':'shoes',
-  '아이':'child','아침':'morning','약':'medicine','어머니':'mother','언니':'sister',
-  '얼음':'ice','여름':'summer','여자':'woman','연필':'pencil','열매':'fruit',
-  '영어':'English','오렌지':'orange','우산':'umbrella','우유':'milk','음식':'food',
-  '음악':'music','의사':'doctor','이름':'name','일본':'Japan','자동차':'car',
-  '자전거':'bicycle','저녁':'evening','종이':'paper','주스':'juice','지갑':'wallet',
-  '지도':'map','집':'house','창문':'window','책':'book','책상':'desk',
-  '초콜릿':'chocolate','축구':'soccer','친구':'friend','카메라':'camera',
-  '커피':'coffee','컴퓨터':'computer','코끼리':'elephant','토마토':'tomato',
-  '편지':'letter','포도':'grape','하늘':'sky','학교':'school','학생':'student',
-  '한국':'Korea','핸드폰':'smartphone','호랑이':'tiger','호텔':'hotel',
-  // 목재/무역 업무 관련
-  '목재':'lumber','합판':'plywood','수입':'import','유통':'distribution',
-  '창고':'warehouse','계약':'contract','항구':'port','선박':'ship',
-  '화물':'cargo','관세':'tariff','단가':'unit price','재고':'inventory',
-  '납기':'delivery','견적':'quotation','원목':'log','각재':'timber',
-  '도매':'wholesale','소매':'retail','이사':'director','부장':'manager',
-  '대리':'assistant manager','과장':'section chief','차장':'deputy manager',
-  '파티클보드':'particleboard','중밀도섬유판':'MDF','섬유판':'fiberboard',
-  '선적':'shipment','통관':'customs clearance','신용장':'letter of credit',
-  '환율':'exchange rate','보험':'insurance','운임':'freight','포장':'packaging',
-  '검수':'inspection','규격':'specification','두께':'thickness','너비':'width',
-  '길이':'length','무게':'weight','수량':'quantity','단위':'unit',
-  '거래처':'customer','공급업체':'supplier','제조업체':'manufacturer',
-  '영업':'sales','구매':'purchase','발주':'order','납품':'delivery',
-  '인보이스':'invoice','패킹리스트':'packing list','선하증권':'bill of lading',
-  // 일상 추가
-  '사무실':'office','회의':'meeting','출장':'business trip','휴가':'vacation',
-  '점심':'lunch','저녁식사':'dinner','아침식사':'breakfast','간식':'snack',
-  '운동':'exercise','수영':'swimming','달리기':'running','등산':'hiking',
-  '영화':'movie','드라마':'drama','음식점':'restaurant','카페':'cafe',
-  '지하철':'subway','택시':'taxi','자가용':'car','비용':'cost','예산':'budget',
-  '목표':'goal','계획':'plan','결과':'result','성과':'achievement',
-  '직원':'employee','고객':'customer','파트너':'partner','경쟁사':'competitor',
+  // 명사
+  '감동':'impression','개인':'individual','건강':'health','경험':'experience','공부':'study',
+  '공원':'park','관계':'relationship','구별':'distinction','규칙':'rule','기억':'memory',
+  '기회':'opportunity','긴장':'tension','꿈':'dream','날씨':'weather','노력':'effort',
+  '능력':'ability','대부분':'most','대화':'conversation','도전':'challenge','목표':'goal',
+  '문제':'problem','미래':'future','발전':'development','방법':'method','변화':'change',
+  '사실':'fact','사회':'society','상황':'situation','생각':'thought','성공':'success',
+  '세계':'world','수업':'class','시간':'time','신뢰':'trust','실수':'mistake',
+  '여행':'travel','역사':'history','연습':'practice','영향':'influence','예의':'manner',
+  '용기':'courage','인터넷':'internet','자신':'self','자신감':'confidence','자연':'nature',
+  '자유':'freedom','잘못':'wrong','정보':'information','종류':'type','주의':'attention',
+  '지식':'knowledge','책임':'responsibility','철학':'philosophy','체험':'experience','최선':'best',
+  '학습':'learning','행복':'happiness','현재':'present','협력':'cooperation','환경':'environment',
+  '활동':'activity','효과':'effect','가게':'store','가구':'furniture','가스':'gas',
+  '가을':'autumn','가족':'family','각도':'angle','간호사':'nurse','강의':'lecture',
+  '건물':'building','게임':'game','결과':'result','경기':'game','경찰':'police',
+  '계단':'stairs','고기':'meat','공기':'air','공장':'factory','공항':'airport',
+  '과학':'science','교사':'teacher','교통':'traffic','구름':'cloud','국가':'country',
+  '군인':'soldier','그림':'painting','근육':'muscle','기계':'machine','기후':'climate',
+  '날개':'wing','남극':'south pole','내일':'tomorrow','노트북':'laptop','눈썹':'eyebrow',
+  '다리':'bridge','담요':'blanket','대통령':'president','도로':'road','도서관':'library',
+  '독서':'reading','동물':'animal','두통':'headache','등산':'hiking','디자인':'design',
+  '라디오':'radio','로봇':'robot','마음':'mind','만화':'cartoon','모래':'sand',
+  '모험':'adventure','목소리':'voice','무대':'stage','문화':'culture','미술':'art',
+  '바위':'rock','박물관':'museum','반지':'ring','발음':'pronunciation','방향':'direction',
+  '배낭':'backpack','버스':'bus','벽':'wall','별자리':'constellation','병원':'hospital',
+  '보물':'treasure','봉사':'volunteer','부모':'parents','비밀':'secret','비행기':'airplane',
+  '사계절':'four seasons','사막':'desert','사진':'photo','산소':'oxygen','상자':'box',
+  '색깔':'color','생물':'biology','서랍':'drawer','선물':'gift','설탕':'sugar',
+  '섬':'island','소방관':'firefighter','소설':'novel','수학':'math','숙제':'homework',
+  '스마트폰':'smartphone','시험':'exam','식물':'plant','신문':'newspaper','싸움':'fight',
+  '아이디어':'idea','악기':'instrument','안경':'glasses','야채':'vegetable','약국':'pharmacy',
+  '어휘':'vocabulary','언어':'language','얼굴':'face','에너지':'energy','여름':'summer',
+  '역할':'role','연구':'research','영웅':'hero','예술':'art','온도':'temperature',
+  '왕':'king','외국':'foreign country','우주':'universe','운동장':'playground','원칙':'principle',
+  '월급':'salary','위험':'danger','유리':'glass','음료':'beverage','의견':'opinion',
+  '의미':'meaning','이웃':'neighbor','인물':'figure','인터뷰':'interview','일기':'diary',
+  '자동차':'car','자전거':'bicycle','작가':'author','잠자리':'dragonfly','장갑':'gloves',
+  '장면':'scene','재능':'talent','저축':'savings','전기':'electricity','전통':'tradition',
+  '정원':'garden','제목':'title','조각':'piece','종교':'religion','주말':'weekend',
+  '중학교':'middle school','지구':'earth','지도':'map','진실':'truth','차이':'difference',
+  '창문':'window','채소':'vegetable','초등학교':'elementary school','축구':'soccer','축제':'festival',
+  '출발':'departure','취미':'hobby','카드':'card','태양':'sun','태풍':'typhoon',
+  '토론':'debate','특징':'characteristic','파도':'wave','편의점':'convenience store','포기':'giving up',
+  '표정':'expression','풍경':'scenery','학년':'grade','한국':'Korea','항공':'aviation',
+  '해결':'solution','현상':'phenomenon','화산':'volcano','확인':'confirmation','환자':'patient',
+  '훈련':'training','희망':'hope',
+  // 동사
+  '가르치다':'teach','감사하다':'thank','고르다':'choose','나타나다':'appear','놀라다':'surprise',
+  '느끼다':'feel','달성하다':'achieve','돕다':'help','동의하다':'agree','따르다':'follow',
+  '믿다':'believe','배우다':'learn','보호하다':'protect','부족하다':'lack','비교하다':'compare',
+  '사용하다':'use','선택하다':'choose','설명하다':'explain','소개하다':'introduce','시작하다':'start',
+  '완성하다':'complete','요청하다':'request','원하다':'want','이해하다':'understand','조심하다':'careful',
+  '즐기다':'enjoy','지키다':'keep','집중하다':'concentrate','참여하다':'participate','찾다':'find',
+  '표현하다':'express',
+  // 형용사
+  '가능하다':'possible','가볍다':'light','각각':'each','간단하다':'simple','강하다':'strong',
+  '낮다':'low','넓다':'wide','높다':'high','다르다':'different','다양하다':'various',
+  '두렵다':'afraid','마지막':'last','모든':'every','복잡하다':'complex','분명하다':'clear',
+  '비슷하다':'similar','새롭다':'new','소중하다':'precious','솔직하다':'honest','쉽다':'easy',
+  '심각하다':'serious','안전하다':'safe','어렵다':'difficult','유명하다':'famous','일반':'general',
+  '작다':'small','정직하다':'honest','중요하다':'important','친절하다':'kind','크다':'big',
+  '특별하다':'special','필요하다':'necessary','힘들다':'hard',
+  // 부사
+  '가장':'most','거의':'almost','계속':'continue','반드시':'must','서로':'each other',
+  '열심히':'hard',
+  // 접속사
+  '그러나':'however','그러므로':'therefore','만약':'if',
   // 동물
-  '곰':'bear','토끼':'rabbit','여우':'fox','늑대':'wolf','사슴':'deer',
-  '원숭이':'monkey','펭귄':'penguin','독수리':'eagle','상어':'shark','고래':'whale',
-  '거북이':'turtle','뱀':'snake','개구리':'frog','다람쥐':'squirrel','햄스터':'hamster',
-  '앵무새':'parrot','오리':'duck','공작':'peacock','사자':'lion','표범':'leopard',
-  '기린':'giraffe','얼룩말':'zebra','하마':'hippo','악어':'crocodile','낙타':'camel',
-  // 신체
-  '눈썹':'eyebrow','속눈썹':'eyelash','귀':'ear','코':'nose','입':'mouth',
-  '이':'tooth','혀':'tongue','턱':'jaw','어깨':'shoulder','팔꿈치':'elbow',
-  '손목':'wrist','손가락':'finger','무릎':'knee','발목':'ankle','발가락':'toe',
-  '가슴':'chest','배꼽':'belly button','허리':'waist','등':'back','엉덩이':'hip',
-  // 음식/요리
-  '삼겹살':'pork belly','된장':'soybean paste','김치':'kimchi','라면':'ramen',
-  '떡':'rice cake','만두':'dumpling','순두부':'soft tofu','냉면':'cold noodle',
-  '잡채':'glass noodles','불고기':'bulgogi','갈비':'ribs','전':'pancake',
-  '식혜':'rice punch','수정과':'cinnamon punch','녹차':'green tea','홍차':'black tea',
-  // 직업/직책
-  '사장':'CEO','회장':'chairman','팀장':'team leader','직원':'employee',
-  '간호사':'nurse','변호사':'lawyer','판사':'judge','검사':'prosecutor',
-  '회계사':'accountant','건축가':'architect','디자이너':'designer','프로그래머':'programmer',
-  // 가전/전자
-  '냉장고':'refrigerator','세탁기':'washing machine','에어컨':'air conditioner',
-  '청소기':'vacuum cleaner','전자레인지':'microwave','오븐':'oven','선풍기':'fan',
-  '텔레비전':'television','리모컨':'remote control','충전기':'charger','이어폰':'earphone',
-  // 자연/환경
-  '지진':'earthquake','태풍':'typhoon','홍수':'flood','가뭄':'drought',
-  '화산':'volcano','빙하':'glacier','사막':'desert','열대우림':'rainforest',
-  '오존':'ozone','탄소':'carbon','미세먼지':'fine dust','재활용':'recycling',
-  // 스포츠
-  '야구':'baseball','농구':'basketball','배구':'volleyball','테니스':'tennis',
-  '골프':'golf','스키':'skiing','수영':'swimming','마라톤':'marathon',
-  '권투':'boxing','태권도':'taekwondo','유도':'judo','검도':'kendo',
-  // 교통/여행
-  '여권':'passport','비자':'visa','환승':'transfer','터미널':'terminal',
-  '짐':'luggage','호텔':'hotel','리조트':'resort','캠핑':'camping',
-  '등산':'hiking','낚시':'fishing','여행사':'travel agency',
-  // 건강/의료
-  '두통':'headache','발열':'fever','기침':'cough','감기':'cold','독감':'flu',
-  '알레르기':'allergy','수술':'surgery','입원':'hospitalization','퇴원':'discharge',
-  '처방':'prescription','복용':'dosage','혈압':'blood pressure','당뇨':'diabetes',
-  // 감정/상태
-  '기쁨':'joy','슬픔':'sadness','분노':'anger','두려움':'fear','놀람':'surprise',
-  '지루함':'boredom','피곤함':'fatigue','설렘':'excitement','그리움':'longing',
-  '후회':'regret','감사':'gratitude','자랑스러움':'pride',
+  '개구리':'frog','고래':'whale','나비':'butterfly','고양이':'cat','강아지':'dog',
+  '토끼':'rabbit','곰':'bear','사자':'lion','호랑이':'tiger','코끼리':'elephant',
+  '기린':'giraffe','원숭이':'monkey','펭귄':'penguin','여우':'fox','늑대':'wolf',
+  '사슴':'deer','말':'horse','소':'cow','돼지':'pig','양':'sheep',
+  '닭':'chicken','오리':'duck','독수리':'eagle','앵무새':'parrot','상어':'shark',
+  '돌고래':'dolphin','문어':'octopus','거북이':'turtle','뱀':'snake','악어':'crocodile',
+  '다람쥐':'squirrel','햄스터':'hamster','얼룩말':'zebra','하마':'hippo','낙타':'camel',
+  '캥거루':'kangaroo','코알라':'koala','판다':'panda','북극곰':'polar bear','홍학':'flamingo',
+  '공작':'peacock','참새':'sparrow','까마귀':'crow','부엉이':'owl','벌':'bee',
+  '개미':'ant','무당벌레':'ladybug','달팽이':'snail','지렁이':'worm','금붕어':'goldfish',
+  // 식물
+  '장미':'rose','해바라기':'sunflower','튤립':'tulip','벚꽃':'cherry blossom','국화':'chrysanthemum',
+  '난초':'orchid','민들레':'dandelion','라벤더':'lavender','선인장':'cactus','대나무':'bamboo',
+  '소나무':'pine tree','단풍나무':'maple tree','은행나무':'ginkgo tree','버드나무':'willow tree','야자나무':'palm tree',
+  '참나무':'oak tree','풀':'grass','이끼':'moss','고사리':'fern','클로버':'clover',
+  // 과일
+  '사과':'apple','바나나':'banana','오렌지':'orange','포도':'grape','딸기':'strawberry',
+  '수박':'watermelon','복숭아':'peach','배':'pear','체리':'cherry','망고':'mango',
+  '파인애플':'pineapple','키위':'kiwi','레몬':'lemon','라임':'lime','멜론':'melon',
+  '블루베리':'blueberry','자두':'plum','감':'persimmon','귤':'tangerine','코코넛':'coconut',
+  // 생활용품
+  '거울':'mirror','냉장고':'refrigerator','달력':'calendar','컵':'cup','텔레비전':'television',
+  '침대':'bed','책상':'desk','의자':'chair','소파':'sofa','세탁기':'washing machine',
+  '전자레인지':'microwave','에어컨':'air conditioner','선풍기':'fan','청소기':'vacuum cleaner','다리미':'iron',
+  '냄비':'pot','프라이팬':'frying pan','젓가락':'chopsticks','숟가락':'spoon','포크':'fork',
+  '접시':'plate','그릇':'bowl','칫솔':'toothbrush','치약':'toothpaste','비누':'soap',
+  '샴푸':'shampoo','수건':'towel','빗':'comb','가위':'scissors','우산':'umbrella',
+  '시계':'clock','가방':'bag','지갑':'wallet','열쇠':'key','양초':'candle',
+  '액자':'picture frame','쿠션':'cushion','이불':'blanket','베개':'pillow',
 };
 
 function $(id) { return document.getElementById(id); }
@@ -1130,6 +1242,421 @@ if ('serviceWorker' in navigator) {
 
 // ── 초기화 ──
 loadHist();
+
+// ── 카테고리 메타데이터 ──
+const KO_CAT = {};
+(function(){
+  const rows = `가능하다,형용사
+가르치다,동사
+가볍다,형용사
+가장,부사
+각각,형용사
+간단하다,형용사
+감동,명사
+감사하다,동사
+강하다,형용사
+개인,명사
+거의,부사
+건강,명사
+경험,명사
+계속,부사
+고르다,동사
+공부,명사
+공원,명사
+관계,명사
+구별,명사
+규칙,명사
+그러나,접속사
+그러므로,접속사
+기억,명사
+기회,명사
+긴장,명사
+꿈,명사
+나타나다,동사
+날씨,명사
+낮다,형용사
+넓다,형용사
+노력,명사
+놀라다,동사
+높다,형용사
+느끼다,동사
+능력,명사
+다르다,형용사
+다양하다,형용사
+달성하다,동사
+대부분,명사
+대화,명사
+도전,명사
+돕다,동사
+동의하다,동사
+두렵다,형용사
+따르다,동사
+마지막,형용사
+만약,접속사
+모든,형용사
+목표,명사
+문제,명사
+미래,명사
+믿다,동사
+반드시,부사
+발전,명사
+방법,명사
+배우다,동사
+변화,명사
+보호하다,동사
+복잡하다,형용사
+부족하다,동사
+분명하다,형용사
+비교하다,동사
+비슷하다,형용사
+사실,명사
+사용하다,동사
+사회,명사
+상황,명사
+새롭다,형용사
+생각,명사
+서로,부사
+선택하다,동사
+설명하다,동사
+성공,명사
+세계,명사
+소개하다,동사
+소중하다,형용사
+솔직하다,형용사
+수업,명사
+쉽다,형용사
+시간,명사
+시작하다,동사
+신뢰,명사
+실수,명사
+심각하다,형용사
+안전하다,형용사
+어렵다,형용사
+여행,명사
+역사,명사
+연습,명사
+열심히,부사
+영향,명사
+예의,명사
+완성하다,동사
+요청하다,동사
+용기,명사
+원하다,동사
+유명하다,형용사
+이해하다,동사
+인터넷,명사
+일반,형용사
+자신,명사
+자신감,명사
+자연,명사
+자유,명사
+작다,형용사
+잘못,명사
+정보,명사
+정직하다,형용사
+조심하다,동사
+종류,명사
+주의,명사
+중요하다,형용사
+즐기다,동사
+지식,명사
+지키다,동사
+집중하다,동사
+참여하다,동사
+찾다,동사
+책임,명사
+철학,명사
+체험,명사
+최선,명사
+친절하다,형용사
+크다,형용사
+특별하다,형용사
+표현하다,동사
+필요하다,형용사
+학습,명사
+행복,명사
+현재,명사
+협력,명사
+환경,명사
+활동,명사
+효과,명사
+힘들다,형용사`.split('\n');
+  rows.forEach(r => { const [k,v]=r.split(','); if(k&&v) KO_CAT[k.trim()]=v.trim(); });
+})();
+
+// ── 확장 사전 (CSV 로드 포함) ──
+let userDict = {}; // 사용자 추가/CSV 로드 단어
+
+function getAllDict() {
+  return Object.assign({}, KO_EN, userDict);
+}
+
+function getCat(ko) {
+  return KO_CAT[ko] || userDict[ko+'__cat'] || '기타';
+}
+
+// ── 탭 전환 ──
+let currentTab = 0;
+function switchTab(n) {
+  for(let i=0;i<3;i++){
+    $(`tab${i}`).classList.toggle('active', i===n);
+    $(`page${i}`).style.display = i===n ? '' : 'none';
+  }
+  currentTab = n;
+  if(n===1) initWordCard();
+  if(n===2) { renderDictList(); updateDictStats(); }
+}
+
+// ── 단어장 모드 ──
+let wcList = [];
+let wcIdx = 0;
+let wcRevealed = false;
+let wcAutoTimer = null;
+let wcPlaying = false;
+let wcCatFilter = '전체';
+
+function initWordCard() {
+  buildCatFilter();
+  buildWcList();
+  showWordCard();
+}
+
+function buildCatFilter() {
+  const all = getAllDict();
+  const cats = new Set(['전체']);
+  Object.keys(all).forEach(k => cats.add(getCat(k)));
+  const container = $('catFilter');
+  container.innerHTML = '';
+  cats.forEach(cat => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip' + (cat===wcCatFilter?' active':'');
+    chip.textContent = cat;
+    chip.addEventListener('click', () => {
+      wcCatFilter = cat;
+      document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      buildWcList();
+      wcIdx=0;
+      showWordCard();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function buildWcList() {
+  const all = getAllDict();
+  wcList = Object.entries(all).filter(([k]) => {
+    if(k.includes('__cat')) return false;
+    if(wcCatFilter==='전체') return true;
+    return getCat(k)===wcCatFilter;
+  });
+}
+
+function showWordCard() {
+  if(!wcList.length){ $('wcKo').textContent='단어 없음'; $('wcEn').textContent=''; return; }
+  wcRevealed = false;
+  const [ko, en] = wcList[wcIdx];
+  $('wcKo').textContent = ko;
+  $('wcEn').textContent = en;
+  $('wcEn').style.display = 'none';
+  $('wcCat').textContent = getCat(ko);
+  $('wcProgress').textContent = `${wcIdx+1} / ${wcList.length}`;
+}
+
+function wcReveal() {
+  wcRevealed = true;
+  $('wcEn').style.display = 'block';
+}
+
+function wcSpeak() {
+  const [, en] = wcList[wcIdx] || [];
+  if(!en) return;
+  wcReveal();
+  const vol = parseInt($('sVol').value)/100;
+  const rate = parseInt($('sRate').value)/10;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(en);
+  u.lang='en-US'; u.rate=rate; u.volume=vol;
+  if(selectedVoice) u.voice=selectedVoice;
+  speechSynthesis.speak(u);
+}
+
+function wcNext() {
+  if(!wcList.length) return;
+  wcIdx = (wcIdx+1) % wcList.length;
+  showWordCard();
+}
+function wcPrev() {
+  if(!wcList.length) return;
+  wcIdx = (wcIdx-1+wcList.length) % wcList.length;
+  showWordCard();
+}
+function wcRandom() {
+  if(!wcList.length) return;
+  wcIdx = Math.floor(Math.random()*wcList.length);
+  showWordCard();
+}
+
+function toggleAuto() {
+  if(wcPlaying) {
+    clearInterval(wcAutoTimer);
+    wcPlaying=false;
+    $('wcAutoBtn').textContent='자동 재생 시작';
+    $('wcAutoBtn').className='btn btn-primary';
+  } else {
+    wcPlaying=true;
+    $('wcAutoBtn').textContent='자동 재생 중지';
+    $('wcAutoBtn').className='btn btn-danger';
+    wcSpeak();
+    const delay = parseInt($('wcDelay').value)/10*1000;
+    wcAutoTimer = setInterval(()=>{
+      wcNext(); wcSpeak();
+    }, delay);
+  }
+}
+
+// ── CSV 로드 ──
+function loadCSV(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.split('\n');
+    let count = 0;
+    const newDict = {};
+    lines.forEach((line, i) => {
+      if(i===0 && line.includes('한글')) return; // 헤더 스킵
+      const parts = line.split(',');
+      if(parts.length < 2) return;
+      const ko = parts[0].trim();
+      const en = parts[1].trim();
+      const cat = parts[2]?.trim() || '기타';
+      if(ko && en && /^[가-힣]+/.test(ko)) {
+        newDict[ko] = en;
+        KO_CAT[ko] = cat;
+        count++;
+      }
+    });
+    userDict = Object.assign(userDict, newDict);
+    saveUserDict();
+    updateDictStats();
+    renderDictList();
+    buildCatFilter();
+    buildWcList();
+    showErr(`✅ ${count}개 단어를 불러왔습니다!`);
+    setTimeout(hideErr, 3000);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function updateDictStats() {
+  const all = getAllDict();
+  const total = Object.keys(all).filter(k=>!k.includes('__cat')).length;
+  $('dictStats').textContent = `현재 사전: 기본 ${Object.keys(KO_EN).length}개 + 사용자 추가 ${Object.keys(userDict).filter(k=>!k.includes('__cat')).length}개 = 총 ${total}개`;
+}
+
+// ── 단어 추가 ──
+function addWord() {
+  const ko = sanitizeWord($('addKo').value);
+  const en = sanitizeWord($('addEn').value);
+  const cat = sanitizeWord($('addCat').value) || '기타';
+  if(!ko || !en) { showErr('한글과 영어 단어를 모두 입력해주세요.'); return; }
+  userDict[ko] = en;
+  KO_CAT[ko] = cat;
+  saveUserDict();
+  updateDictStats();
+  renderDictList();
+  buildWcList();
+  $('addKo').value=''; $('addEn').value=''; $('addCat').value='';
+  showErr(`✅ "${ko} = ${en}" 추가됨`);
+  setTimeout(hideErr, 2000);
+}
+
+// ── 단어 목록 렌더링 ──
+function renderDictList() {
+  const all = getAllDict();
+  const q = ($('searchDict')?.value||'').toLowerCase();
+  const container = $('dictList');
+  container.innerHTML='';
+  let items = Object.entries(all).filter(([k])=>!k.includes('__cat'));
+  if(q) items = items.filter(([k,v])=>k.includes(q)||v.toLowerCase().includes(q));
+  items.slice(0,100).forEach(([ko,en])=>{
+    const row = document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:14px;';
+    const left = document.createElement('span');
+    left.textContent = `${ko} = ${en}`;
+    const cat = document.createElement('span');
+    cat.textContent = getCat(ko);
+    cat.style.cssText='font-size:11px;color:var(--text3);margin-right:6px;';
+    const del = document.createElement('button');
+    del.textContent='삭제';
+    del.style.cssText='font-size:11px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;';
+    del.addEventListener('click', ()=>{
+      delete userDict[ko];
+      saveUserDict();
+      renderDictList();
+      buildWcList();
+      updateDictStats();
+    });
+    row.appendChild(left); row.appendChild(cat);
+    // 기본 사전 단어는 삭제 불가
+    if(userDict[ko]!==undefined) row.appendChild(del);
+    container.appendChild(row);
+  });
+  if(items.length>100){
+    const more=document.createElement('p');
+    more.textContent=`검색으로 ${items.length-100}개 더 있음`;
+    more.style.cssText='font-size:12px;color:var(--text3);text-align:center;padding:8px;';
+    container.appendChild(more);
+  }
+}
+
+// ── CSV 다운로드 ──
+function downloadCSV() {
+  const all = getAllDict();
+  const lines = ['한글,영어,카테고리'];
+  Object.entries(all).filter(([k])=>!k.includes('__cat')).forEach(([ko,en])=>{
+    lines.push(`${ko},${en},${getCat(ko)}`);
+  });
+  const BOM = '\uFEFF';  // 엑셀 한글 깨짐 방지 BOM
+  const blob = new Blob([BOM + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dictionary.csv';
+  a.click();
+}
+
+// ── userDict 저장/로드 ──
+function saveUserDict() {
+  try { localStorage.setItem('user_dict', JSON.stringify(userDict)); } catch(e){}
+}
+function loadUserDict() {
+  try {
+    const s = localStorage.getItem('user_dict');
+    if(s) {
+      const d = JSON.parse(s);
+      if(typeof d==='object') userDict = d;
+    }
+  } catch(e){}
+}
+
+// translateWord 확장: 전체 사전(userDict 포함) 사용
+const _origTranslate = translateWord;
+async function translateWord(kor) {
+  const all = getAllDict();
+  if(all[kor]) return all[kor];
+  // 유사 매칭도 전체 사전 대상으로
+  for(const [k,v] of Object.entries(all)){
+    if(k.includes('__cat')) continue;
+    if(kor.includes(k) && k.length>=1) return v;
+  }
+  // API 폴백
+  return await _origTranslate(kor);
+}
+
+loadUserDict();
+updateDictStats();
 </script>
 </body>
 </html>
